@@ -1,0 +1,97 @@
+name: Rust
+
+on:
+  push:
+    branches: '*'
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  project-name: 'project-name'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install rustup
+      run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+    - name: Test
+      run: cargo test --verbose
+  
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install rustup
+      run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+    - name: Install fmt
+      run: rustup component add rustfmt
+    - name: Fmt
+      run: cargo fmt --verbose
+    - name: Install clippy
+      run: rustup component add clippy
+    - name: Clippy
+      run: cargo clippy --verbose
+
+  
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install rustup
+      run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+    - name: Check
+      run: cargo check --verbose
+
+  build-linux:
+    needs: 
+      - test
+      - lint
+      - check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/cargo@v1
+    - name: Build
+      run: cargo build --release --all-features
+    - name: Publish Binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{env.project-name}}-x86_64-unknown-linux-gnu
+        path: ./target/release/${{env.project-name}}
+    
+  build-macos:
+    needs: 
+      - test
+      - lint
+      - check
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/cargo@v1
+    - name: Build
+      run: cargo build --release --all-features
+    - name: Publish Binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{env.project-name}}-x86_64-apple-darwin
+        path: ./target/release/${{env.project-name}}
+  
+  build-windows:
+    needs: 
+      - test
+      - lint
+      - check
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/cargo@v1
+    - name: Build
+      run: cargo build --release --all-features
+    - name: Publish Binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{env.project-name}}-x86_64-pc-windows
+        path: ./target/release/${{env.project-name}}.exe
