@@ -21,15 +21,13 @@ enum BetType {
     // Corner,
     // DoubleStreet,
     // Trio,
-    // FirstFour,
-    // Basket,
-    // LowPass,
-    // HighPass,
+    Basket,
+    LowPass,
+    HighPass,
     RedorBlack(RedBlack),
     OddorEven(OddEven),
-    // DozenBet,
-    // ColumnBet,
-    // SnakeBet,
+    DozenBet(i32),
+    ColumnBet(i32),
 }
 
 #[derive(Debug, PartialEq)]
@@ -49,13 +47,37 @@ fn main() {
         bet_amount: 1.0,
     });
     bets.push(Bet {
-      bet_type: BetType::RedorBlack(RedBlack::Red),
+      bet_type: BetType::Basket,
+      bet_amount: 1.0,
+    });
+    bets.push(Bet {
+      bet_type: BetType::LowPass,
+      bet_amount: 1.0,
+    });
+    bets.push(Bet {
+      bet_type: BetType::HighPass,
+      bet_amount: 1.0,
+    });
+    bets.push(Bet {
+        bet_type: BetType::RedorBlack(RedBlack::Red),
+        bet_amount: 1.0,
+    });
+    bets.push(Bet {
+        bet_type: BetType::OddorEven(OddEven::Even),
+        bet_amount: 1.0,
+    });
+    bets.push(Bet {
+      bet_type: BetType::Single(1),
       bet_amount: 1.0,
   });
   bets.push(Bet {
-    bet_type: BetType::OddorEven(OddEven::Even),
+        bet_type: BetType::DozenBet(1),
+        bet_amount: 1.0,
+  });
+  bets.push(Bet {
+    bet_type: BetType::ColumnBet(1),
     bet_amount: 1.0,
-});
+  });
 
     // Spin the wheel and determine the outcome
     let number = spin(wheel);
@@ -108,12 +130,17 @@ fn results_handler(number: i32, bet: Bet) -> f32 {
     let mut winnings = 0.0;
     match bet.bet_type {
         BetType::Single(value) => winnings += single_handler(number, bet.bet_amount, value),
+        BetType::Basket => winnings += basket_handler(number, bet.bet_amount),
+        BetType::LowPass => winnings += low_pass_handler(number, bet.bet_amount),
+        BetType::HighPass => winnings += high_pass_handler(number, bet.bet_amount),
         BetType::RedorBlack(colour) => {
             winnings += red_or_black_handler(number, bet.bet_amount, colour)
         }
         BetType::OddorEven(odd_even) => {
             winnings += odd_or_even_handler(number, bet.bet_amount, odd_even)
         }
+        BetType::DozenBet(dozen) => winnings += dozen_handler(number, bet.bet_amount, dozen),
+        BetType::ColumnBet(column) => winnings += column_handler(number, bet.bet_amount, column),
     }
     winnings
 }
@@ -125,6 +152,36 @@ fn single_handler(spin_number: i32, bet_amount: f32, bet_number: i32) -> f32 {
         winnings = (bet_amount * 36.0) + bet_amount;
     }
     winnings
+}
+
+// Handle a basket bet
+fn basket_handler(spin_number: i32, bet_amount: f32) -> f32 {
+  let mut winnings = 0.0;
+  let basket = [0, 1, 2, 3 ];
+  if basket.contains(&spin_number) {
+      winnings = (bet_amount * 8.0) + bet_amount;
+  }
+  winnings
+}
+
+// Handle a low pass bet
+fn low_pass_handler(spin_number: i32, bet_amount: f32) -> f32 {
+  let mut winnings = 0.0;
+  let low_pass = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  if low_pass.contains(&spin_number) {
+      winnings = (bet_amount * 1.0) + bet_amount;
+  }
+  winnings
+}
+
+// Handle a high pass bet
+fn high_pass_handler(spin_number: i32, bet_amount: f32) -> f32 {
+  let mut winnings = 0.0;
+  let high_pass = [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36];
+  if high_pass.contains(&spin_number) {
+      winnings = (bet_amount * 1.0) + bet_amount;
+  }
+  winnings
 }
 
 // Handle a red/black bed
@@ -145,6 +202,34 @@ fn odd_or_even_handler(spin_number: i32, bet_amount: f32, bet_odd_even: OddEven)
         winnings = (bet_amount * 1.0) + bet_amount;
     }
     winnings
+}
+
+// Handle a dozen bet
+fn dozen_handler(spin_number: i32, bet_amount: f32, bet_column: i32) -> f32 {
+  let mut winnings = 0.0;
+  let dozens = [
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+    [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]
+    ];
+  if dozens[(bet_column - 1) as usize].contains(&spin_number) {
+      winnings = (bet_amount * 2.0) + bet_amount;
+  }
+  winnings
+}
+
+// Handle a column bet
+fn column_handler(spin_number: i32, bet_amount: f32, bet_column: i32) -> f32 {
+  let mut winnings = 0.0;
+  let columns = [
+    [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34],
+    [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
+    [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
+    ];
+  if columns[(bet_column - 1) as usize].contains(&spin_number) {
+      winnings = (bet_amount * 2.0) + bet_amount;
+  }
+  winnings
 }
 
 #[cfg(test)]
@@ -168,7 +253,7 @@ mod tests {
     // TODO: Add tests for all results handlers
 
     #[test]
-    fn win_on_odd_even() {
+    fn number_odd_even() {
         let mut count = 0;
         let mut flag = OddEven::Even;
         let bet_odd = OddEven::Odd;
