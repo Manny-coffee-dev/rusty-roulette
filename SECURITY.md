@@ -4,7 +4,7 @@ If you believe you've found a security issue in software that is maintained in t
 
 | Version | In scope | Source code |
 | ------- | -------- | ----------- |
-| latest  | ✅ | https://github.com/Manny-coffee-dev/rust-desktop-template/tree/main |
+| latest  | ✅ | https://github.com/Manny-coffee-dev/rusty-roulette/tree/main |
 
 # How to Submit a Report
 
