@@ -12,7 +12,12 @@ enum RedBlack {
     Black,
 }
 
-// TODO: Add the rest of the [bet types](https://en.wikipedia.org/wiki/Roulette#Types_of_bets)
+// Roulette bet types as defined in: https://en.wikipedia.org/wiki/Roulette#Types_of_bets
+// TODO: #1 Implement Split bet type and result handler
+// TODO: #2 Implement Street bet type and result handler
+// TODO: #3 Implement Corner bet type and result handler
+// TODO: #4 Implement DoubleStreet bet type and result handler
+// TODO: #5 Implement Trio bet type and result handler
 #[derive(Debug, PartialEq)]
 enum BetType {
     Single(i32),
@@ -40,56 +45,70 @@ fn main() {
     println!("--- Rusty Roulette Simulator ---");
     // Set up environment
     let wheel = Uniform::new(0, 36);
-    let mut bets = Vec::<Bet>::new();
-    // TODO: Add some user input for placing bets
-    bets.push(Bet {
-        bet_type: BetType::Single(1),
-        bet_amount: 1.0,
-    });
-    bets.push(Bet {
-      bet_type: BetType::Basket,
-      bet_amount: 1.0,
-    });
-    bets.push(Bet {
-      bet_type: BetType::LowPass,
-      bet_amount: 1.0,
-    });
-    bets.push(Bet {
-      bet_type: BetType::HighPass,
-      bet_amount: 1.0,
-    });
-    bets.push(Bet {
-        bet_type: BetType::RedorBlack(RedBlack::Red),
-        bet_amount: 1.0,
-    });
-    bets.push(Bet {
-        bet_type: BetType::OddorEven(OddEven::Even),
-        bet_amount: 1.0,
-    });
-    bets.push(Bet {
-      bet_type: BetType::Single(1),
-      bet_amount: 1.0,
-  });
-  bets.push(Bet {
-        bet_type: BetType::DozenBet(1),
-        bet_amount: 1.0,
-  });
-  bets.push(Bet {
-    bet_type: BetType::ColumnBet(1),
-    bet_amount: 1.0,
-  });
+    let mut running_total = 100.0;
+    let total_rounds = 10000;
+    let mut round = 0;
 
-    // Spin the wheel and determine the outcome
-    let number = spin(wheel);
-    println!("It's a {0:?}!", number);
+    while round < total_rounds {
+        round += 1;
+        let mut bets = Vec::<Bet>::new();
+        bets.push(Bet {
+            bet_type: BetType::Single(1),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Basket,
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::LowPass,
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::HighPass,
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::RedorBlack(RedBlack::Red),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::OddorEven(OddEven::Even),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Single(1),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::DozenBet(1),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::ColumnBet(1),
+            bet_amount: 1.0,
+        });
 
-    // See if which bets won
-    let mut total_winnings = 0.0;
-    for bet in bets {
-        total_winnings += results_handler(number, bet);
+        // Spin the wheel and determine the outcome
+        let number = spin(wheel);
+        println!("It's a {0:?}!", number);
+
+        // See if which bets won
+        let mut total_winnings = 0.0;
+        for bet in bets {
+            total_winnings -= bet.bet_amount;
+            total_winnings += results_handler(number, bet);
+        }
+        running_total += total_winnings;
     }
-    println!("You won £{0:?}", total_winnings);
+
+    println!(
+        "After {0} spins, your balance is {1:?}",
+        round, running_total
+    );
 }
+
+// TODO: #6 Move results handlers to separate library
 
 // Check if a number is odd or even
 fn number_odd_or_even(number: i32) -> OddEven {
@@ -108,7 +127,7 @@ fn number_red_or_black(number: i32) -> RedBlack {
     let red = [
         1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
     ];
-    // TODO: Add error handling to check if number is not red or black!
+    // TODO: Add error handling to check if number is not red or black
     //let black = [2, 4, 6, 8, 10, 11,  13, 15, 17, 20, 22, 24,  26, 28, 29, 31, 33, 35 ];
     if red.contains(&number) {
         colour = RedBlack::Red;
@@ -128,6 +147,7 @@ fn spin(wheel: Uniform<i32>) -> i32 {
 // Handle the results of spin
 fn results_handler(number: i32, bet: Bet) -> f32 {
     let mut winnings = 0.0;
+    // TODO: #7 Add error handling to check the number is a valid roulette number (0-36) in results_handler
     match bet.bet_type {
         BetType::Single(value) => winnings += single_handler(number, bet.bet_amount, value),
         BetType::Basket => winnings += basket_handler(number, bet.bet_amount),
@@ -156,32 +176,36 @@ fn single_handler(spin_number: i32, bet_amount: f32, bet_number: i32) -> f32 {
 
 // Handle a basket bet
 fn basket_handler(spin_number: i32, bet_amount: f32) -> f32 {
-  let mut winnings = 0.0;
-  let basket = [0, 1, 2, 3 ];
-  if basket.contains(&spin_number) {
-      winnings = (bet_amount * 8.0) + bet_amount;
-  }
-  winnings
+    let mut winnings = 0.0;
+    let basket = [0, 1, 2, 3];
+    if basket.contains(&spin_number) {
+        winnings = (bet_amount * 8.0) + bet_amount;
+    }
+    winnings
 }
 
 // Handle a low pass bet
 fn low_pass_handler(spin_number: i32, bet_amount: f32) -> f32 {
-  let mut winnings = 0.0;
-  let low_pass = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
-  if low_pass.contains(&spin_number) {
-      winnings = (bet_amount * 1.0) + bet_amount;
-  }
-  winnings
+    let mut winnings = 0.0;
+    let low_pass = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+    ];
+    if low_pass.contains(&spin_number) {
+        winnings = (bet_amount * 1.0) + bet_amount;
+    }
+    winnings
 }
 
 // Handle a high pass bet
 fn high_pass_handler(spin_number: i32, bet_amount: f32) -> f32 {
-  let mut winnings = 0.0;
-  let high_pass = [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36];
-  if high_pass.contains(&spin_number) {
-      winnings = (bet_amount * 1.0) + bet_amount;
-  }
-  winnings
+    let mut winnings = 0.0;
+    let high_pass = [
+        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+    ];
+    if high_pass.contains(&spin_number) {
+        winnings = (bet_amount * 1.0) + bet_amount;
+    }
+    winnings
 }
 
 // Handle a red/black bed
@@ -206,30 +230,30 @@ fn odd_or_even_handler(spin_number: i32, bet_amount: f32, bet_odd_even: OddEven)
 
 // Handle a dozen bet
 fn dozen_handler(spin_number: i32, bet_amount: f32, bet_column: i32) -> f32 {
-  let mut winnings = 0.0;
-  let dozens = [
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
-    [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]
+    let mut winnings = 0.0;
+    let dozens = [
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+        [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36],
     ];
-  if dozens[(bet_column - 1) as usize].contains(&spin_number) {
-      winnings = (bet_amount * 2.0) + bet_amount;
-  }
-  winnings
+    if dozens[(bet_column - 1) as usize].contains(&spin_number) {
+        winnings = (bet_amount * 2.0) + bet_amount;
+    }
+    winnings
 }
 
 // Handle a column bet
 fn column_handler(spin_number: i32, bet_amount: f32, bet_column: i32) -> f32 {
-  let mut winnings = 0.0;
-  let columns = [
-    [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34],
-    [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
-    [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
+    let mut winnings = 0.0;
+    let columns = [
+        [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34],
+        [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
+        [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36],
     ];
-  if columns[(bet_column - 1) as usize].contains(&spin_number) {
-      winnings = (bet_amount * 2.0) + bet_amount;
-  }
-  winnings
+    if columns[(bet_column - 1) as usize].contains(&spin_number) {
+        winnings = (bet_amount * 2.0) + bet_amount;
+    }
+    winnings
 }
 
 #[cfg(test)]
