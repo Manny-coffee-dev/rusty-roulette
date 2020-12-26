@@ -13,14 +13,13 @@ enum RedBlack {
 }
 
 // Roulette bet types as defined in: https://en.wikipedia.org/wiki/Roulette#Types_of_bets
-// TODO: #2 Implement Street bet type and result handler
 // TODO: #3 Implement Corner bet type and result handler
 // TODO: #4 Implement DoubleStreet bet type and result handler
 #[derive(Debug, PartialEq)]
 enum BetType {
     Single(i32),
     Split(i32, i32),
-    // Street,
+    Street(i32, i32, i32),
     // Corner,
     // DoubleStreet,
     Trio(i32, i32, i32),
@@ -56,6 +55,10 @@ fn main() {
         });
         bets.push(Bet {
             bet_type: BetType::Split(8, 9),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Street(20, 22, 21),
             bet_amount: 1.0,
         });
         bets.push(Bet {
@@ -175,6 +178,21 @@ fn valid_split(first_number: i32, second_number: i32) -> bool {
     valid
 }
 
+// Check if a street is valid
+fn valid_street(first_number: i32, second_number: i32, third_number: i32) -> bool {
+    let mut valid = false;
+    // Order the numbers with the lowest-first to enable a simpler search
+    let bet_street = sort([first_number, second_number, third_number]);
+    let board = [
+        [1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18], [19, 20, 21], [22, 23, 24], [25,
+        26, 27], [28, 29, 30], [31, 32, 33], [34, 35, 36],
+    ];
+    if board.contains(&bet_street){
+        valid = true;
+    }
+    valid
+}
+
 // Sorts array in ascending order
 fn sort<A, T>(mut array: A) -> A
 where
@@ -201,6 +219,9 @@ fn results_handler(number: i32, bet: Bet) -> f32 {
         BetType::Single(value) => winnings += single_handler(number, bet.bet_amount, value),
         BetType::Split(first_value, second_value) => {
             winnings += split_handler(number, bet.bet_amount, first_value, second_value)
+        }
+        BetType::Street(first_value, second_value, third_value) => {
+            winnings += street_handler(number, bet.bet_amount, first_value, second_value, third_value)
         }
         BetType::Trio(first_value, second_value, third_value) => {
             winnings += trio_handler(number, bet.bet_amount, first_value, second_value, third_value)
@@ -246,6 +267,24 @@ fn split_handler(
     winnings
 }
 
+// Handle a street bet
+// TODO: Add error handling to street handler to flag invalid streets
+fn street_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_bet_number: i32,
+    second_bet_number: i32,
+    third_bet_number: i32,
+) -> f32 {
+    let mut winnings = 0.0;
+    if valid_street(first_bet_number, second_bet_number, third_bet_number) {
+        if spin_number == first_bet_number || spin_number == second_bet_number || spin_number == third_bet_number {
+            winnings = (bet_amount * 11.0) + bet_amount;
+        }
+    }
+    winnings
+}
+
 // Handle a trio bet
 // TODO: Add error handling to trio handler to flag invalid trios
 fn trio_handler(
@@ -264,7 +303,7 @@ fn trio_handler(
     // Check if trio is valid before if the spin number is in the trio
     if trios.contains(&bet_trio) {
         if bet_trio.contains(&spin_number){
-            winnings = (bet_amount * 17.0) + bet_amount;
+            winnings = (bet_amount * 11.0) + bet_amount;
         }
     }
     winnings
