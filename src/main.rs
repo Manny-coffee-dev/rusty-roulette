@@ -12,24 +12,22 @@ enum RedBlack {
     Black,
 }
 
-// TODO: Add the rest of the [bet types](https://en.wikipedia.org/wiki/Roulette#Types_of_bets)
+// Roulette bet types as defined in: https://en.wikipedia.org/wiki/Roulette#Types_of_bets
 #[derive(Debug, PartialEq)]
 enum BetType {
     Single(i32),
-    // Split,
-    // Street,
-    // Corner,
-    // DoubleStreet,
-    // Trio,
-    // FirstFour,
-    // Basket,
-    // LowPass,
-    // HighPass,
+    Split(i32, i32),
+    Street(i32, i32, i32),
+    Corner(i32, i32, i32, i32),
+    DoubleStreet(i32, i32, i32, i32, i32, i32),
+    Trio(i32, i32, i32),
+    Basket,
+    LowPass,
+    HighPass,
     RedorBlack(RedBlack),
     OddorEven(OddEven),
-    // DozenBet,
-    // ColumnBet,
-    // SnakeBet,
+    DozenBet(i32),
+    ColumnBet(i32),
 }
 
 #[derive(Debug, PartialEq)]
@@ -42,32 +40,90 @@ fn main() {
     println!("--- Rusty Roulette Simulator ---");
     // Set up environment
     let wheel = Uniform::new(0, 36);
-    let mut bets = Vec::<Bet>::new();
-    // TODO: Add some user input for placing bets
-    bets.push(Bet {
-        bet_type: BetType::Single(1),
-        bet_amount: 1.0,
-    });
-    bets.push(Bet {
-      bet_type: BetType::RedorBlack(RedBlack::Red),
-      bet_amount: 1.0,
-  });
-  bets.push(Bet {
-    bet_type: BetType::OddorEven(OddEven::Even),
-    bet_amount: 1.0,
-});
+    let mut running_total = 100.0;
+    let total_rounds = 10000;
+    let mut round = 0;
 
-    // Spin the wheel and determine the outcome
-    let number = spin(wheel);
-    println!("It's a {0:?}!", number);
+    while round < total_rounds {
+        round += 1;
+        let mut bets = Vec::<Bet>::new();
+        bets.push(Bet {
+            bet_type: BetType::Single(1),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Split(8, 9),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Street(20, 22, 21),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Corner(19, 20, 22, 23),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::DoubleStreet(20, 22, 21, 23, 26, 24),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Trio(0, 2, 1),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Basket,
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::LowPass,
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::HighPass,
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::RedorBlack(RedBlack::Red),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::OddorEven(OddEven::Even),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Single(1),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::DozenBet(1),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::ColumnBet(1),
+            bet_amount: 1.0,
+        });
 
-    // See if which bets won
-    let mut total_winnings = 0.0;
-    for bet in bets {
-        total_winnings += results_handler(number, bet);
+        // Spin the wheel and determine the outcome
+        let number = spin(wheel);
+        println!("It's a {0:?}!", number);
+
+        // See if which bets won
+        let mut total_winnings = 0.0;
+        for bet in bets {
+            total_winnings -= bet.bet_amount;
+            total_winnings += results_handler(number, bet);
+        }
+        running_total += total_winnings;
     }
-    println!("You won £{0:?}", total_winnings);
+
+    println!(
+        "After {0} spins, your balance is {1:?}",
+        round, running_total
+    );
 }
+
+// TODO: #6 Move results handlers to separate library
 
 // Check if a number is odd or even
 fn number_odd_or_even(number: i32) -> OddEven {
@@ -86,7 +142,7 @@ fn number_red_or_black(number: i32) -> RedBlack {
     let red = [
         1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
     ];
-    // TODO: Add error handling to check if number is not red or black!
+    // TODO: Add error handling to check if number is not red or black
     //let black = [2, 4, 6, 8, 10, 11,  13, 15, 17, 20, 22, 24,  26, 28, 29, 31, 33, 35 ];
     if red.contains(&number) {
         colour = RedBlack::Red;
@@ -95,6 +151,95 @@ fn number_red_or_black(number: i32) -> RedBlack {
     //   colour = RedBlack::Black;
     // }
     colour
+}
+
+// Check if a split is valid
+fn valid_split(first_number: i32, second_number: i32) -> bool {
+    let mut valid = false;
+    // Order the numbers with the lowest-first to enable a quicker search
+    let lowest_number;
+    let highest_number;
+    if first_number < second_number {
+        lowest_number = first_number;
+        highest_number = second_number;
+    } else {
+        lowest_number = second_number;
+        highest_number = first_number;
+    }
+    let board = [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+    ];
+    // Get the indexs of the split's numbers
+    let lowest_index = board.iter().position(|&r| r == lowest_number).unwrap();
+    let highest_index = board.iter().position(|&r| r == highest_number).unwrap();
+    // Is the highest number to the right of the lowest number?
+    if highest_index - lowest_index == 1 {
+        valid = true;
+    }
+    // Is the highest number below the lowest number? (as rows are only 3 numbers wide)
+    if highest_index - lowest_index == 3 {
+        valid = true;
+    }
+    valid
+}
+
+// Check if a street is valid
+fn valid_street(first_number: i32, second_number: i32, third_number: i32) -> bool {
+    let mut valid = false;
+    // Order the numbers with the lowest-first to enable a simpler search
+    let bet_street = sort([first_number, second_number, third_number]);
+    let board = [
+        [1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18], [19, 20, 21], [22, 23, 24], [25,
+        26, 27], [28, 29, 30], [31, 32, 33], [34, 35, 36],
+    ];
+    if board.contains(&bet_street){
+        valid = true;
+    }
+    valid
+}
+
+// Check if a corner is valid
+fn valid_corner(corner: [i32; 4]) -> bool {
+    let mut valid = false;
+    if corner[1] - corner[0] == 1 {
+        if corner[2] - corner[0] == 3 {
+            if corner[3] - corner[2] == 1{
+                valid = true;
+            }
+        }
+    }
+    valid
+}
+
+// Check if a double street is valid
+fn valid_double_street(double_street: [i32; 6]) -> bool {
+    let mut valid = false;
+    // sum the difference between each number (assuming first number is =< 0 and the fifth is <38)
+    let mut count = 1;
+    let mut total = 0;
+    if double_street[0] > -1 && double_street[5] < 38 {
+        while count < 6 {
+            total += double_street[count] - double_street[count-1];
+            count += 1;
+        }
+    }
+    if total == 5 {
+        valid = true;
+    }
+    valid
+}
+
+// Sorts array in ascending order
+fn sort<A, T>(mut array: A) -> A
+where
+    A: AsMut<[T]>,
+    T: Ord,
+{
+    let slice = array.as_mut();
+    slice.sort();
+
+    array
 }
 
 // Generate a random number from our wheel
@@ -106,14 +251,36 @@ fn spin(wheel: Uniform<i32>) -> i32 {
 // Handle the results of spin
 fn results_handler(number: i32, bet: Bet) -> f32 {
     let mut winnings = 0.0;
+    // TODO: #7 Add error handling to check the number is a valid roulette number (0-36) in results_handler
+    // TODO: Change any multi-value handler to take arrays instead
     match bet.bet_type {
         BetType::Single(value) => winnings += single_handler(number, bet.bet_amount, value),
+        BetType::Split(first_value, second_value) => {
+            winnings += split_handler(number, bet.bet_amount, first_value, second_value)
+        }
+        BetType::Street(first_value, second_value, third_value) => {
+            winnings += street_handler(number, bet.bet_amount, first_value, second_value, third_value)
+        }
+        BetType::Corner(first_value, second_value, third_value, fourth_value) => {
+            winnings += corner_handler(number, bet.bet_amount, first_value, second_value, third_value, fourth_value)
+        }
+        BetType::DoubleStreet(first_value, second_value, third_value, fourth_value, fifth_value, sixth_value) => {
+            winnings += double_street_handler(number, bet.bet_amount, first_value, second_value, third_value, fourth_value, fifth_value, sixth_value)
+        }
+        BetType::Trio(first_value, second_value, third_value) => {
+            winnings += trio_handler(number, bet.bet_amount, first_value, second_value, third_value)
+        }
+        BetType::Basket => winnings += basket_handler(number, bet.bet_amount),
+        BetType::LowPass => winnings += low_pass_handler(number, bet.bet_amount),
+        BetType::HighPass => winnings += high_pass_handler(number, bet.bet_amount),
         BetType::RedorBlack(colour) => {
             winnings += red_or_black_handler(number, bet.bet_amount, colour)
         }
         BetType::OddorEven(odd_even) => {
             winnings += odd_or_even_handler(number, bet.bet_amount, odd_even)
         }
+        BetType::DozenBet(dozen) => winnings += dozen_handler(number, bet.bet_amount, dozen),
+        BetType::ColumnBet(column) => winnings += column_handler(number, bet.bet_amount, column),
     }
     winnings
 }
@@ -123,6 +290,140 @@ fn single_handler(spin_number: i32, bet_amount: f32, bet_number: i32) -> f32 {
     let mut winnings = 0.0;
     if spin_number == bet_number {
         winnings = (bet_amount * 36.0) + bet_amount;
+    }
+    winnings
+}
+
+// Handle a split bet
+// TODO: Add error handling to split handler to flag invalid splits
+fn split_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_bet_number: i32,
+    second_bet_number: i32,
+) -> f32 {
+    let mut winnings = 0.0;
+    if valid_split(first_bet_number, second_bet_number) {
+        if spin_number == first_bet_number || spin_number == second_bet_number {
+            winnings = (bet_amount * 17.0) + bet_amount;
+        }
+    }
+    winnings
+}
+
+// Handle a street bet
+// TODO: Add error handling to street handler to flag invalid streets
+fn street_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_bet_number: i32,
+    second_bet_number: i32,
+    third_bet_number: i32,
+) -> f32 {
+    let mut winnings = 0.0;
+    if valid_street(first_bet_number, second_bet_number, third_bet_number) {
+        if spin_number == first_bet_number || spin_number == second_bet_number || spin_number == third_bet_number {
+            winnings = (bet_amount * 11.0) + bet_amount;
+        }
+    }
+    winnings
+}
+
+// Handle a corner bet
+fn corner_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_bet_number: i32,
+    second_bet_number: i32,
+    third_bet_number: i32,
+    fourth_bet_number: i32,
+) -> f32 {
+    let mut winnings = 0.0;
+    let corner = sort([first_bet_number, second_bet_number, third_bet_number, fourth_bet_number]);
+    if valid_corner(corner) {
+        if corner.contains(&spin_number) {
+            winnings = (bet_amount * 8.0) + bet_amount;
+        }
+    }
+    winnings
+}
+
+// Handle a street bet
+// TODO: Add error handling to street handler to flag invalid streets
+fn double_street_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_value: i32,
+    second_value: i32,
+    third_value: i32,
+    fourth_value: i32,
+    fifth_value: i32,
+    sixth_value: i32
+) -> f32 {
+    let mut winnings = 0.0;
+    let double_street = sort([first_value, second_value, third_value, fourth_value, fifth_value, sixth_value]);
+    if valid_double_street(double_street) {
+        if double_street.contains(&spin_number) {
+            winnings = (bet_amount * 5.0) + bet_amount;
+        }
+    }
+    winnings
+}
+
+// Handle a trio bet
+// TODO: Add error handling to trio handler to flag invalid trios
+fn trio_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_bet_number: i32,
+    second_bet_number: i32,
+    third_bet_number: i32,
+) -> f32 {
+    let mut winnings = 0.0;
+    let bet_trio = sort([first_bet_number, second_bet_number, third_bet_number]);
+    let trios = [
+        [0, 1, 2],
+        [0, 2, 3],
+    ];
+    // Check if trio is valid before if the spin number is in the trio
+    if trios.contains(&bet_trio) {
+        if bet_trio.contains(&spin_number){
+            winnings = (bet_amount * 11.0) + bet_amount;
+        }
+    }
+    winnings
+}
+
+// Handle a basket bet
+fn basket_handler(spin_number: i32, bet_amount: f32) -> f32 {
+    let mut winnings = 0.0;
+    let basket = [0, 1, 2, 3];
+    if basket.contains(&spin_number) {
+        winnings = (bet_amount * 8.0) + bet_amount;
+    }
+    winnings
+}
+
+// Handle a low pass bet
+fn low_pass_handler(spin_number: i32, bet_amount: f32) -> f32 {
+    let mut winnings = 0.0;
+    let low_pass = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+    ];
+    if low_pass.contains(&spin_number) {
+        winnings = (bet_amount * 1.0) + bet_amount;
+    }
+    winnings
+}
+
+// Handle a high pass bet
+fn high_pass_handler(spin_number: i32, bet_amount: f32) -> f32 {
+    let mut winnings = 0.0;
+    let high_pass = [
+        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+    ];
+    if high_pass.contains(&spin_number) {
+        winnings = (bet_amount * 1.0) + bet_amount;
     }
     winnings
 }
@@ -143,6 +444,34 @@ fn odd_or_even_handler(spin_number: i32, bet_amount: f32, bet_odd_even: OddEven)
     let spin_odd_even = number_odd_or_even(spin_number);
     if spin_odd_even == bet_odd_even {
         winnings = (bet_amount * 1.0) + bet_amount;
+    }
+    winnings
+}
+
+// Handle a dozen bet
+fn dozen_handler(spin_number: i32, bet_amount: f32, bet_column: i32) -> f32 {
+    let mut winnings = 0.0;
+    let dozens = [
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+        [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36],
+    ];
+    if dozens[(bet_column - 1) as usize].contains(&spin_number) {
+        winnings = (bet_amount * 2.0) + bet_amount;
+    }
+    winnings
+}
+
+// Handle a column bet
+fn column_handler(spin_number: i32, bet_amount: f32, bet_column: i32) -> f32 {
+    let mut winnings = 0.0;
+    let columns = [
+        [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34],
+        [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
+        [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36],
+    ];
+    if columns[(bet_column - 1) as usize].contains(&spin_number) {
+        winnings = (bet_amount * 2.0) + bet_amount;
     }
     winnings
 }
@@ -168,7 +497,7 @@ mod tests {
     // TODO: Add tests for all results handlers
 
     #[test]
-    fn win_on_odd_even() {
+    fn number_odd_even() {
         let mut count = 0;
         let mut flag = OddEven::Even;
         let bet_odd = OddEven::Odd;
