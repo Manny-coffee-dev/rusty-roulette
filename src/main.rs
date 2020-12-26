@@ -21,7 +21,7 @@ enum BetType {
     Split(i32, i32),
     Street(i32, i32, i32),
     // Corner,
-    // DoubleStreet,
+    DoubleStreet(i32, i32, i32, i32, i32, i32),
     Trio(i32, i32, i32),
     Basket,
     LowPass,
@@ -59,6 +59,10 @@ fn main() {
         });
         bets.push(Bet {
             bet_type: BetType::Street(20, 22, 21),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::DoubleStreet(20, 22, 21, 23, 26, 24),
             bet_amount: 1.0,
         });
         bets.push(Bet {
@@ -193,6 +197,24 @@ fn valid_street(first_number: i32, second_number: i32, third_number: i32) -> boo
     valid
 }
 
+// Check if a double street is valid
+fn valid_double_street(double_street: [i32; 6]) -> bool {
+    let mut valid = false;
+    // sum the difference between each number (assuming first number is =< 0 and the fifth is <38)
+    let mut count = 1;
+    let mut total = 0;
+    if double_street[0] > -1 && double_street[5] < 38 {
+        while count < 6 {
+            total += double_street[count] - double_street[count-1];
+            count += 1;
+        }
+    }
+    if total == 5 {
+        valid = true;
+    }
+    valid
+}
+
 // Sorts array in ascending order
 fn sort<A, T>(mut array: A) -> A
 where
@@ -215,6 +237,7 @@ fn spin(wheel: Uniform<i32>) -> i32 {
 fn results_handler(number: i32, bet: Bet) -> f32 {
     let mut winnings = 0.0;
     // TODO: #7 Add error handling to check the number is a valid roulette number (0-36) in results_handler
+    // TODO: Change any multi-value handler to take arrays instead
     match bet.bet_type {
         BetType::Single(value) => winnings += single_handler(number, bet.bet_amount, value),
         BetType::Split(first_value, second_value) => {
@@ -222,6 +245,9 @@ fn results_handler(number: i32, bet: Bet) -> f32 {
         }
         BetType::Street(first_value, second_value, third_value) => {
             winnings += street_handler(number, bet.bet_amount, first_value, second_value, third_value)
+        }
+        BetType::DoubleStreet(first_value, second_value, third_value, fourth_value, fifth_value, sixth_value) => {
+            winnings += double_street_handler(number, bet.bet_amount, first_value, second_value, third_value, fourth_value, fifth_value, sixth_value)
         }
         BetType::Trio(first_value, second_value, third_value) => {
             winnings += trio_handler(number, bet.bet_amount, first_value, second_value, third_value)
@@ -280,6 +306,28 @@ fn street_handler(
     if valid_street(first_bet_number, second_bet_number, third_bet_number) {
         if spin_number == first_bet_number || spin_number == second_bet_number || spin_number == third_bet_number {
             winnings = (bet_amount * 11.0) + bet_amount;
+        }
+    }
+    winnings
+}
+
+// Handle a street bet
+// TODO: Add error handling to street handler to flag invalid streets
+fn double_street_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_value: i32,
+    second_value: i32,
+    third_value: i32,
+    fourth_value: i32,
+    fifth_value: i32,
+    sixth_value: i32
+) -> f32 {
+    let mut winnings = 0.0;
+    let double_street = sort([first_value, second_value, third_value, fourth_value, fifth_value, sixth_value]);
+    if valid_double_street(double_street) {
+        if double_street.contains(&spin_number) {
+            winnings = (bet_amount * 5.0) + bet_amount;
         }
     }
     winnings
