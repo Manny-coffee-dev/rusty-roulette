@@ -13,7 +13,6 @@ enum RedBlack {
 }
 
 // Roulette bet types as defined in: https://en.wikipedia.org/wiki/Roulette#Types_of_bets
-// TODO: #1 Implement Split bet type and result handler
 // TODO: #2 Implement Street bet type and result handler
 // TODO: #3 Implement Corner bet type and result handler
 // TODO: #4 Implement DoubleStreet bet type and result handler
@@ -21,7 +20,7 @@ enum RedBlack {
 #[derive(Debug, PartialEq)]
 enum BetType {
     Single(i32),
-    // Split,
+    Split(i32, i32),
     // Street,
     // Corner,
     // DoubleStreet,
@@ -54,6 +53,10 @@ fn main() {
         let mut bets = Vec::<Bet>::new();
         bets.push(Bet {
             bet_type: BetType::Single(1),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Split(8, 9),
             bet_amount: 1.0,
         });
         bets.push(Bet {
@@ -138,6 +141,37 @@ fn number_red_or_black(number: i32) -> RedBlack {
     colour
 }
 
+// Check if a split is valid
+fn valid_split(first_number: i32, second_number: i32) -> bool {
+    let mut valid = false;
+    // Order the numbers with the lowest-first to enable a quicker search
+    let lowest_number;
+    let highest_number;
+    if first_number < second_number {
+        lowest_number = first_number;
+        highest_number = second_number;
+    } else {
+        lowest_number = second_number;
+        highest_number = first_number;
+    }
+    let board = [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+    ];
+    // Get the indexs of the split's numbers
+    let lowest_index = board.iter().position(|&r| r == lowest_number).unwrap();
+    let highest_index = board.iter().position(|&r| r == highest_number).unwrap();
+    // Is the highest number to the right of the lowest number?
+    if highest_index - lowest_index == 1 {
+        valid = true;
+    }
+    // Is the highest number below the lowest number? (as rows are only 3 numbers wide)
+    if highest_index - lowest_index == 3 {
+        valid = true;
+    }
+    valid
+}
+
 // Generate a random number from our wheel
 fn spin(wheel: Uniform<i32>) -> i32 {
     let mut rng = rand::thread_rng();
@@ -150,6 +184,9 @@ fn results_handler(number: i32, bet: Bet) -> f32 {
     // TODO: #7 Add error handling to check the number is a valid roulette number (0-36) in results_handler
     match bet.bet_type {
         BetType::Single(value) => winnings += single_handler(number, bet.bet_amount, value),
+        BetType::Split(first_value, second_value) => {
+            winnings += split_handler(number, bet.bet_amount, first_value, second_value)
+        }
         BetType::Basket => winnings += basket_handler(number, bet.bet_amount),
         BetType::LowPass => winnings += low_pass_handler(number, bet.bet_amount),
         BetType::HighPass => winnings += high_pass_handler(number, bet.bet_amount),
@@ -170,6 +207,23 @@ fn single_handler(spin_number: i32, bet_amount: f32, bet_number: i32) -> f32 {
     let mut winnings = 0.0;
     if spin_number == bet_number {
         winnings = (bet_amount * 36.0) + bet_amount;
+    }
+    winnings
+}
+
+// Handle a split bet
+// TODO: Add error handling to split handler to flag invalid splits
+fn split_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_bet_number: i32,
+    second_bet_number: i32,
+) -> f32 {
+    let mut winnings = 0.0;
+    if valid_split(first_bet_number, second_bet_number) {
+        if spin_number == first_bet_number || spin_number == second_bet_number {
+            winnings = (bet_amount * 17.0) + bet_amount;
+        }
     }
     winnings
 }
