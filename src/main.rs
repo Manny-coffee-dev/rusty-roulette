@@ -16,7 +16,6 @@ enum RedBlack {
 // TODO: #2 Implement Street bet type and result handler
 // TODO: #3 Implement Corner bet type and result handler
 // TODO: #4 Implement DoubleStreet bet type and result handler
-// TODO: #5 Implement Trio bet type and result handler
 #[derive(Debug, PartialEq)]
 enum BetType {
     Single(i32),
@@ -204,13 +203,7 @@ fn results_handler(number: i32, bet: Bet) -> f32 {
             winnings += split_handler(number, bet.bet_amount, first_value, second_value)
         }
         BetType::Trio(first_value, second_value, third_value) => {
-            winnings += trio_handler(
-                number,
-                bet.bet_amount,
-                first_value,
-                second_value,
-                third_value,
-            )
+            winnings += trio_handler(number, bet.bet_amount, first_value, second_value, third_value)
         }
         BetType::Basket => winnings += basket_handler(number, bet.bet_amount),
         BetType::LowPass => winnings += low_pass_handler(number, bet.bet_amount),
@@ -264,10 +257,13 @@ fn trio_handler(
 ) -> f32 {
     let mut winnings = 0.0;
     let bet_trio = sort([first_bet_number, second_bet_number, third_bet_number]);
-    let trios = [[0, 1, 2], [0, 2, 3]];
+    let trios = [
+        [0, 1, 2],
+        [0, 2, 3],
+    ];
     // Check if trio is valid before if the spin number is in the trio
     if trios.contains(&bet_trio) {
-        if bet_trio.contains(&spin_number) {
+        if bet_trio.contains(&spin_number){
             winnings = (bet_amount * 17.0) + bet_amount;
         }
     }
