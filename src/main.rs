@@ -13,14 +13,12 @@ enum RedBlack {
 }
 
 // Roulette bet types as defined in: https://en.wikipedia.org/wiki/Roulette#Types_of_bets
-// TODO: #3 Implement Corner bet type and result handler
-// TODO: #4 Implement DoubleStreet bet type and result handler
 #[derive(Debug, PartialEq)]
 enum BetType {
     Single(i32),
     Split(i32, i32),
     Street(i32, i32, i32),
-    // Corner,
+    Corner(i32, i32, i32, i32),
     DoubleStreet(i32, i32, i32, i32, i32, i32),
     Trio(i32, i32, i32),
     Basket,
@@ -59,6 +57,10 @@ fn main() {
         });
         bets.push(Bet {
             bet_type: BetType::Street(20, 22, 21),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Corner(19, 20, 22, 23),
             bet_amount: 1.0,
         });
         bets.push(Bet {
@@ -197,6 +199,19 @@ fn valid_street(first_number: i32, second_number: i32, third_number: i32) -> boo
     valid
 }
 
+// Check if a corner is valid
+fn valid_corner(corner: [i32; 4]) -> bool {
+    let mut valid = false;
+    if corner[1] - corner[0] == 1 {
+        if corner[2] - corner[0] == 3 {
+            if corner[3] - corner[2] == 1{
+                valid = true;
+            }
+        }
+    }
+    valid
+}
+
 // Check if a double street is valid
 fn valid_double_street(double_street: [i32; 6]) -> bool {
     let mut valid = false;
@@ -245,6 +260,9 @@ fn results_handler(number: i32, bet: Bet) -> f32 {
         }
         BetType::Street(first_value, second_value, third_value) => {
             winnings += street_handler(number, bet.bet_amount, first_value, second_value, third_value)
+        }
+        BetType::Corner(first_value, second_value, third_value, fourth_value) => {
+            winnings += corner_handler(number, bet.bet_amount, first_value, second_value, third_value, fourth_value)
         }
         BetType::DoubleStreet(first_value, second_value, third_value, fourth_value, fifth_value, sixth_value) => {
             winnings += double_street_handler(number, bet.bet_amount, first_value, second_value, third_value, fourth_value, fifth_value, sixth_value)
@@ -306,6 +324,25 @@ fn street_handler(
     if valid_street(first_bet_number, second_bet_number, third_bet_number) {
         if spin_number == first_bet_number || spin_number == second_bet_number || spin_number == third_bet_number {
             winnings = (bet_amount * 11.0) + bet_amount;
+        }
+    }
+    winnings
+}
+
+// Handle a corner bet
+fn corner_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_bet_number: i32,
+    second_bet_number: i32,
+    third_bet_number: i32,
+    fourth_bet_number: i32,
+) -> f32 {
+    let mut winnings = 0.0;
+    let corner = sort([first_bet_number, second_bet_number, third_bet_number, fourth_bet_number]);
+    if valid_corner(corner) {
+        if corner.contains(&spin_number) {
+            winnings = (bet_amount * 8.0) + bet_amount;
         }
     }
     winnings
