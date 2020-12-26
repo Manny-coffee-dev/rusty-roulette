@@ -24,7 +24,7 @@ enum BetType {
     // Street,
     // Corner,
     // DoubleStreet,
-    // Trio,
+    Trio(i32, i32, i32),
     Basket,
     LowPass,
     HighPass,
@@ -57,6 +57,10 @@ fn main() {
         });
         bets.push(Bet {
             bet_type: BetType::Split(8, 9),
+            bet_amount: 1.0,
+        });
+        bets.push(Bet {
+            bet_type: BetType::Trio(0, 2, 1),
             bet_amount: 1.0,
         });
         bets.push(Bet {
@@ -172,6 +176,18 @@ fn valid_split(first_number: i32, second_number: i32) -> bool {
     valid
 }
 
+// Sorts array in ascending order
+fn sort<A, T>(mut array: A) -> A
+where
+    A: AsMut<[T]>,
+    T: Ord,
+{
+    let slice = array.as_mut();
+    slice.sort();
+
+    array
+}
+
 // Generate a random number from our wheel
 fn spin(wheel: Uniform<i32>) -> i32 {
     let mut rng = rand::thread_rng();
@@ -186,6 +202,15 @@ fn results_handler(number: i32, bet: Bet) -> f32 {
         BetType::Single(value) => winnings += single_handler(number, bet.bet_amount, value),
         BetType::Split(first_value, second_value) => {
             winnings += split_handler(number, bet.bet_amount, first_value, second_value)
+        }
+        BetType::Trio(first_value, second_value, third_value) => {
+            winnings += trio_handler(
+                number,
+                bet.bet_amount,
+                first_value,
+                second_value,
+                third_value,
+            )
         }
         BetType::Basket => winnings += basket_handler(number, bet.bet_amount),
         BetType::LowPass => winnings += low_pass_handler(number, bet.bet_amount),
@@ -222,6 +247,27 @@ fn split_handler(
     let mut winnings = 0.0;
     if valid_split(first_bet_number, second_bet_number) {
         if spin_number == first_bet_number || spin_number == second_bet_number {
+            winnings = (bet_amount * 17.0) + bet_amount;
+        }
+    }
+    winnings
+}
+
+// Handle a trio bet
+// TODO: Add error handling to trio handler to flag invalid trios
+fn trio_handler(
+    spin_number: i32,
+    bet_amount: f32,
+    first_bet_number: i32,
+    second_bet_number: i32,
+    third_bet_number: i32,
+) -> f32 {
+    let mut winnings = 0.0;
+    let bet_trio = sort([first_bet_number, second_bet_number, third_bet_number]);
+    let trios = [[0, 1, 2], [0, 2, 3]];
+    // Check if trio is valid before if the spin number is in the trio
+    if trios.contains(&bet_trio) {
+        if bet_trio.contains(&spin_number) {
             winnings = (bet_amount * 17.0) + bet_amount;
         }
     }
